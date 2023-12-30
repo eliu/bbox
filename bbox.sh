@@ -60,10 +60,6 @@ log::is_debug_enabled() {
   [[ $LOG_LEVEL =~ debug ]]
 }
 
-readonly QUIET_FLAG_Q=$(log::is_verbose_enabled || printf -- "-q")
-readonly QUIET_FLAG_S=$(log::is_verbose_enabled || printf -- "-s")
-readonly QUIET_STDOUT=$(log::is_verbose_enabled && echo "/dev/stdout" || echo "/dev/null")
-
 # ----------------------------------------------------------------
 # Check if specified commands exists
 # #@: commands separated with spaces
@@ -74,6 +70,11 @@ test::cmd() {
   done
   return 0
 }
+
+readonly QUIET_FLAG_Q=$(log::is_verbose_enabled || printf -- "-q")
+readonly QUIET_FLAG_S=$(log::is_verbose_enabled || printf -- "-s")
+readonly QUIET_STDOUT=$(log::is_verbose_enabled && echo "/dev/stdout" || echo "/dev/null")
+readonly PKGMGR=$(test::cmd dnf && echo dnf || echo yum)
 
 # ----------------------------------------------------------------
 # Execute command as vagrant
@@ -272,7 +273,6 @@ setup::del_context() {
 setup::gather_facts() {
   source <(cat /etc/os-release | sed -e '/^[[:space:]]*$/d' -re 's/^(.*)/OS_\1/g')
   OS_VERSION_MAJOR=$(echo $OS_VERSION_ID | cut -d'.' -f1)
-  test::cmd dnf && PKGMGR=dnf || PKGMGR=yum
 }
 
 # ----------------------------------------------------------------
@@ -280,8 +280,10 @@ setup::gather_facts() {
 # Scope: private
 # ----------------------------------------------------------------
 setup::make_cache() {
-  log::info "Making cache. This may take a few seconds..."
-  $PKGMGR $QUIET_FLAG_Q makecache >$QUIET_STDOUT 2>&1
+  ${SETUP_NEED_CACHE:-false} && {
+    log::info "Making cache. This may take a few seconds..."
+    $PKGMGR $QUIET_FLAG_Q makecache >$QUIET_STDOUT 2>&1
+  } || true
 }
 
 # ----------------------------------------------------------------
@@ -291,14 +293,25 @@ setup::repo() {
   setup::gather_facts
   case $OS_ID in
   rocky)
-    grep aliyun /etc/yum.repos.d/*ocky*.repo > /dev/null 2>&1 || {
+    grep aliyun /etc/yum.repos.d/*ocky*.repo >/dev/null 2>&1 || {
       log::info "Accelerating base repo..."
       # https://developer.aliyun.com/mirror/rockylinux
       sed -i.bak \
         -e 's|^mirrorlist=|#mirrorlist=|g' \
-        -e 's|^#baseurl=http://dl.rockylinux.org/$contentdir|baseurl=https://mirrors.aliyun.com/rockylinux|g' \
+        -e 's|^#\s*baseurl=https\?://dl.rockylinux.org/$contentdir|baseurl=https://mirrors.aliyun.com/rockylinux|g' \
         /etc/yum.repos.d/*ocky*.repo
-      setup::make_cache
+      SETUP_NEED_CACHE=true
+    }
+    ;;
+  almalinux)
+    grep aliyun /etc/yum.repos.d/almalinux*.repo >/dev/null 2>&1 || {
+      log::info "Accelerating base repo..."
+      # https://developer.aliyun.com/mirror/almalinux
+      sed -i.bak \
+        -e 's|^mirrorlist=|#mirrorlist=|g' \
+        -e 's|^#\s*baseurl=https\?://repo.almalinux.org|baseurl=https://mirrors.aliyun.com|g' \
+        /etc/yum.repos.d/almalinux*.repo
+      SETUP_NEED_CACHE=true
     }
     ;;
   centos)
@@ -310,7 +323,7 @@ setup::repo() {
         -e '/mirrors.cloud.aliyuncs.com/d' \
         -e '/mirrors.aliyuncs.com/d' \
         /etc/yum.repos.d/CentOS-Base.repo
-      setup::make_cache
+      SETUP_NEED_CACHE=true
     }
     ;;
   *)
@@ -339,7 +352,7 @@ setup::epel() {
       -e 's|^#baseurl=https\?://download.example/pub|baseurl=https://mirrors.aliyun.com|' \
       -e 's|^metalink|#metalink|' \
       /etc/yum.repos.d/epel*
-    setup::make_cache
+    SETUP_NEED_CACHE=true
   }
 }
 
@@ -369,5 +382,21 @@ setup::main() {
   setup::dns
   setup::repo
   setup::epel
+  setup::make_cache
   [[ $SETUP_SHOW_WRAP_UP = "true" ]] && setup::wrap_up || true
 }
+
+# ----------------------------------------------------------------
+# Install softwares via package manager
+# Scope: public
+# Parameters
+#   $@ -> package names
+# ----------------------------------------------------------------
+pkgmgr::install() {
+  test::cmd %@ || $PKGMGR install -y $QUIET_FLAG_Q $@ >$QUIET_STDOUT 2>&1
+}
+
+export QUIET_FLAG_Q
+export QUIET_FLAG_S
+export QUIET_STDOUT
+export PKGMGR

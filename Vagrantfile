@@ -5,36 +5,41 @@ $script = <<-SHELL
   set -e
   source /vagrant/bbox.sh
   setup::main
-  # making test
-  test::cmd cowsay || {
-    test::cmd dnf && dnf install -q -y cowsay || yum install -q -y cowsay
-  }
-  vg::exec 'cowsay "Congrats! bbox successfully inited!"'
+  log::info "Installing cowsay..."
+  pkgmgr::install cowsay && vg::exec 'cowsay "Congrats! bbox successfully inited!"'
 SHELL
-# All Vagrant configuration is done below. The "2" in Vagrant.configure
-# configures the configuration version (we support older styles for
-# backwards compatibility). Please don't change it unless you know what
-# you're doing.
+
 Vagrant.configure("2") do |config|
+  config.ssh.insert_key = false
   config.vm.box_check_update = false
   config.vm.provider "virtualbox" do |vb|  
     vb.memory = "1024"
-    vb.cpus = 1
+    vb.cpus = 2
   end
   config.vm.provision "shell", keep_color: true, inline: $script
 
-  config.vm.define "centos" do |s|
-    s.vm.box = "bento/centos-7"
-    s.vm.network "private_network", ip: "192.168.133.101"
-  end
-
-  config.vm.define "rocky8" do |s|
-    s.vm.box = "bento/rockylinux-8"
-    s.vm.network "private_network", ip: "192.168.133.102"
-  end
-
-  config.vm.define "rocky9" do |s|
+  config.vm.define "rocky9", primary: true do |s|
     s.vm.box = "bento/rockylinux-9"
-    s.vm.network "private_network", ip: "192.168.133.103"
+    s.vm.network "private_network", ip: "192.168.13.10"
+  end
+
+  config.vm.define "rocky8", autostart: false do |s|
+    s.vm.box = "bento/rockylinux-8"
+    s.vm.network "private_network", ip: "192.168.13.11"
+  end
+
+  config.vm.define "alma9", autostart: false do |s|
+    s.vm.box = "bento/almalinux-9"
+    s.vm.network "private_network", ip: "192.168.13.12"
+  end
+
+  config.vm.define "alma8", autostart: false do |s|
+    s.vm.box = "bento/almalinux-8"
+    s.vm.network "private_network", ip: "192.168.13.13"
+  end
+
+  config.vm.define "centos", autostart: false do |s|
+    s.vm.box = "bento/centos-7"
+    s.vm.network "private_network", ip: "192.168.13.14"
   end
 end

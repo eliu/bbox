@@ -2,11 +2,15 @@
 
 本项目通过 Vagrant 快速启动一个适用于国内网络环境的干净的 Linux 开发环境。以下 Vagrant Box 镜像已通过验证：
 
-- bento/centos-7
-- bento/rockylinux-8
-- bento/rockylinux-9
+| 操作系统        | Vagrant Box 镜像     | 虚拟机名称 | IP            |
+| --------------- | -------------------- | ---------- | ------------- |
+| Rocky Linux 9.x | `bento/rockylinux-9` | rocky9     | 192.168.13.10 |
+| Rocky Linux 8.x | `bento/rockylinux-8` | rocky8     | 192.168.13.11 |
+| AlmaLinux 9.x   | `bento/almalinux-9`  | alma9      | 192.168.13.12 |
+| AlmaLinux 8.x   | `bento/almalinux-8`  | alma8      | 192.168.13.13 |
+| CentOS 7.x      | `bento/centos-7`     | centos     | 192.168.13.14 |
 
-相比于 [eliu/devbox: 快速开发环境 (github.com)](https://github.com/eliu/devbox)，bbox 没有过多的配置选项，没有额外的软件需要安装
+相比于 [eliu/devbox: 快速开发环境 (github.com)](https://github.com/eliu/devbox)，bbox 没有过多的配置选项，没有额外的软件需要安装。
 
 ## 先决条件
 
@@ -37,65 +41,37 @@ set -e
 export VG_LOG_LEVEL=verbose # <--- here
 source /vagrant/bbox.sh
 setup::main
+# ...
 ```
 
 ### 快速启动
 
-项目默认启动三个 VirtualBox 虚拟机，使用的 Vagrant Box 镜像分别为 `bento/centos-7`、`bento/rockylinux-8`、`bento/rockylinux-9`。进入项目主目录 `cd bbox` 然后执行启动命令：
+项目默认启动一个 VirtualBox 虚拟机，使用的 Vagrant Box 镜像 `bento/rockylinux-9`，启动命令如下：
 
 ```shell
 $ vagrant up
 ```
 
-在终端会看到类似下面的日志信息，该信息表示在环境初始化完成之后，执行一次安装 `cowsay` 以验证开发环境是否可以正常安装软件。
+对于其他的 Box 镜像，如果用户想要使用它们，可以再次运行 `vagrant up` 命令，并在后面指定“虚拟机名称”，一次可以指定多个。举例说明，以下命令将依次启动 `alma9` 和 `centos` 两个虚拟机：
+
+```shell
+$ vagrant up alma9 centos
+```
+
+Vagrant 虚拟机在启动过程中，终端会看到类似下面的日志信息，该信息表示在环境初始化完成之后，执行一次安装 `cowsay` 以验证开发环境是否可以正常安装软件。
 
 ```
-==> centos: Running provisioner: shell...
-    centos: Running: inline script
-    centos: [INFO] Gathering facts for networks...
-    centos: [INFO] All set! Wrap it up...
-    centos: PROPERTY     VALUE
-    centos: machine os   CentOS Linux release 7.9.2009 (Core)
-    centos: machine ip   192.168.133.101
-    centos: dns list     114.114.114.114,8.8.8.8
-    centos: epel         epel-release.noarch.7-14
-    centos: timezone     Asia/Shanghai
-    centos:  _____________________________________
-    centos: < Congrats! bbox successfully inited! >
-    centos:  -------------------------------------
-    centos:         \   ^__^
-    centos:          \  (oo)\_______
-    centos:             (__)\       )\/\
-    centos:                 ||----w |
-    centos:                 ||     ||
-==> rocky8: Running provisioner: shell...
-    rocky8: Running: inline script
-    rocky8: [INFO] Gathering facts for networks...
-    rocky8: [INFO] All set! Wrap it up...
-    rocky8: PROPERTY     VALUE
-    rocky8: machine os   Rocky Linux release 8.8 (Green Obsidian)
-    rocky8: machine ip   192.168.133.102
-    rocky8: dns list     114.114.114.114,8.8.8.8
-    rocky8: epel         epel-release.noarch.8-19.el8
-    rocky8: timezone     Asia/Shanghai
-    rocky8:  _____________________________________
-    rocky8: < Congrats! bbox successfully inited! >
-    rocky8:  -------------------------------------
-    rocky8:         \   ^__^
-    rocky8:          \  (oo)\_______
-    rocky8:             (__)\       )\/\
-    rocky8:                 ||----w |
-    rocky8:                 ||     ||
 ==> rocky9: Running provisioner: shell...
     rocky9: Running: inline script
     rocky9: [INFO] Gathering facts for networks...
     rocky9: [INFO] All set! Wrap it up...
     rocky9: PROPERTY     VALUE
     rocky9: machine os   Rocky Linux release 9.2 (Blue Onyx)
-    rocky9: machine ip   192.168.133.103
+    rocky9: machine ip   192.168.13.10
     rocky9: dns list     114.114.114.114,8.8.8.8
     rocky9: epel         epel-release.noarch.9-7.el9
     rocky9: timezone     Asia/Shanghai
+    rocky9: [INFO] Installing cowsay...
     rocky9:  _____________________________________
     rocky9: < Congrats! bbox successfully inited! >
     rocky9:  -------------------------------------
