@@ -3,9 +3,10 @@
 $script = <<-SHELL
   #!/usr/bin/env bash
   set -e
+  # export VG_LOG_LEVEL=verbose
+  # export VG_SHOW_WRAP_UP=false
   source /vagrant/bbox.sh
   setup::main
-  log::info "Installing cowsay..."
   pkgmgr::install cowsay && vg::exec 'cowsay "Congrats! bbox successfully inited!"'
 SHELL
 
