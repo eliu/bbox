@@ -277,11 +277,85 @@ setup::gather_facts() {
 }
 
 # ----------------------------------------------------------------
+# Make cache for repo (right after accelerating repo...)
+# Scope: private
+# ----------------------------------------------------------------
+setup::make_cache() {
+  ${SETUP_NEED_CACHE:-false} && {
+    log::info "Making cache. This may take a few seconds..."
+    $PKGMGR $QUIET_FLAG_Q makecache >$QUIET_STDOUT 2>&1
+  } || true
+}
+
+# ----------------------------------------------------------------
+# Change repo mirror to aliyun
+# ----------------------------------------------------------------
+setup::repo() {
+  setup::gather_facts
+  case $OS_ID in
+  rocky)
+    grep aliyun /etc/yum.repos.d/*ocky*.repo >/dev/null 2>&1 || {
+      log::info "Accelerating base repo..."
+      # https://developer.aliyun.com/mirror/rockylinux
+      sed -i.bak \
+        -e 's|^mirrorlist=|#mirrorlist=|g' \
+        -e 's|^#\s*baseurl=https\?://dl.rockylinux.org/$contentdir|baseurl=https://mirrors.aliyun.com/rockylinux|g' \
+        /etc/yum.repos.d/*ocky*.repo
+      SETUP_NEED_CACHE=true
+    }
+    ;;
+  almalinux)
+    grep aliyun /etc/yum.repos.d/almalinux*.repo >/dev/null 2>&1 || {
+      log::info "Accelerating base repo..."
+      # https://developer.aliyun.com/mirror/almalinux
+      sed -i.bak \
+        -e 's|^mirrorlist=|#mirrorlist=|g' \
+        -e 's|^#\s*baseurl=https\?://repo.almalinux.org|baseurl=https://mirrors.aliyun.com|g' \
+        /etc/yum.repos.d/almalinux*.repo
+      SETUP_NEED_CACHE=true
+    }
+    ;;
+  centos)
+    [[ $OS_VERSION_MAJOR = "7" ]] || log::fatal "Only centos 7.x distros are supported."
+    grep aliyun /etc/yum.repos.d/CentOS-Base.repo >/dev/null 2>&1 || {
+      log::info "Accelerating base repo..."
+      rm -fr /etc/yum.repos.d/*.repo
+      curl -sSL https://mirrors.aliyun.com/repo/Centos-7.repo -o /etc/yum.repos.d/CentOS-Base.repo
+      sed -i.bak \
+        -e '/mirrors.cloud.aliyuncs.com/d' \
+        -e '/mirrors.aliyuncs.com/d' \
+        /etc/yum.repos.d/CentOS-Base.repo
+      SETUP_NEED_CACHE=true
+    }
+    ;;
+  *)
+    log::fatal "OS $OS_ID not supported."
+    ;;
+  esac
+}
+
+# ----------------------------------------------------------------
 # Install and accelerate epel repo
 # Scope: private
 # ----------------------------------------------------------------
 setup::epel() {
-  $PKGMGR list installed "epel*" > /dev/null 2>&1 || pkgmgr::install epel-release
+  setup::gather_facts
+  
+  $PKGMGR list installed "epel*" > /dev/null 2>&1 || {
+    log::info "Installing epel-release..."
+    $PKGMGR install $QUIET_FLAG_Q -y \
+      https://mirrors.aliyun.com/epel/epel-release-latest-${OS_VERSION_MAJOR}.noarch.rpm \
+      >$QUIET_STDOUT 2>&1
+    
+    log::info "Accelerating epel repo..."
+    # https://developer.aliyun.com/mirror/epel/?spm=a2c6h.25603864.0.0.43455993b5QGRS
+    rm -f /etc/yum.repos.d/epel-cisco-openh264.repo
+    sed -i.bak \
+      -e 's|^#baseurl=https\?://download.example/pub|baseurl=https://mirrors.aliyun.com|' \
+      -e 's|^metalink|#metalink|' \
+      /etc/yum.repos.d/epel*
+    SETUP_NEED_CACHE=true
+  }
 }
 
 # ----------------------------------------------------------------
@@ -307,8 +381,9 @@ EOF
 # ----------------------------------------------------------------
 setup::main() {
   setup::dns
+  setup::repo
   setup::epel
-  # setup::make_cache
+  setup::make_cache
   [[ $SETUP_SHOW_WRAP_UP = "true" ]] && setup::wrap_up || true
 }
 
