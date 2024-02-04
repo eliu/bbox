@@ -13,6 +13,17 @@ readonly LOG_LEVEL=${VG_LOG_LEVEL:-info}
 readonly SETUP_ENV_FILE="/etc/profile.d/$PROG.sh"
 readonly SETUP_SHOW_WRAP_UP=${VG_SHOW_WRAP_UP:-true}
 
+# ----------------------------------------------------------------
+# Check if specified commands exists
+# #@: commands separated with spaces
+# ----------------------------------------------------------------
+cmd_exists() {
+  while [ $# -gt 0 ]; do
+    command -v $1 >/dev/null 2>&1 && shift || return
+  done
+  return 0
+}
+
 style::green() {
   echo -e "$STYLE_GREEN$@$STYLE_RESET"
 }
@@ -45,36 +56,25 @@ log::fatal() { echo $(style::red "[FATA] $@"); exit 1
 # Logging a verbose message
 # ----------------------------------------------------------------
 log::verbose() { 
-  log::is_verbose_enabled && echo $(style::cyan "VERBOSE: $@") || true
+  log::is_verbose && echo $(style::cyan "VERBOSE: $@") || true
 }
 # ----------------------------------------------------------------
 # Check if we're in verbose mode or lower level logging
 # ----------------------------------------------------------------
-log::is_verbose_enabled() {
+log::is_verbose() {
   [[ $LOG_LEVEL =~ debug|verbose ]]
 }
 # ----------------------------------------------------------------
 # Check if we're in debug mode
 # ----------------------------------------------------------------
-log::is_debug_enabled() {
+log::is_debug() {
   [[ $LOG_LEVEL =~ debug ]]
 }
 
-# ----------------------------------------------------------------
-# Check if specified commands exists
-# #@: commands separated with spaces
-# ----------------------------------------------------------------
-test::cmd() {
-  while [ $# -gt 0 ]; do
-    command -v $1 >/dev/null 2>&1 && shift || return
-  done
-  return 0
-}
-
-readonly QUIET_FLAG_Q=$(log::is_verbose_enabled || printf -- "-q")
-readonly QUIET_FLAG_S=$(log::is_verbose_enabled || printf -- "-s")
-readonly QUIET_STDOUT=$(log::is_verbose_enabled && echo "/dev/stdout" || echo "/dev/null")
-readonly PKGMGR=$(test::cmd dnf && echo dnf || echo yum)
+readonly QUIET_FLAG_Q=$(log::is_verbose || printf -- "-q")
+readonly QUIET_FLAG_S=$(log::is_verbose || printf -- "-s")
+readonly QUIET_STDOUT=$(log::is_verbose && echo "/dev/stdout" || echo "/dev/null")
+readonly PKGMGR=$(cmd_exists dnf && echo dnf || echo yum)
 
 # ----------------------------------------------------------------
 # Execute command as vagrant
@@ -153,12 +153,10 @@ network::gather_uuid_with_auto_method() {
 }
 
 # ----------------------------------------------------------------
-# Gather dns list of specified network
-# $1 -> network uuid
-# Scope: private
+# Gather dns list
 # ----------------------------------------------------------------
-network::gather_dns_of() {
-  network_facts[dns]=$(nmcli -terse conn show $1 | grep "ipv4.dns:" | cut -d: -f2)
+network::gather_dns() {
+  network_facts[dns]=$(grep nameserver /etc/resolv.conf | awk '{print $2}' | xargs | tr ' ' ',')
 }
 
 # ----------------------------------------------------------------
@@ -166,17 +164,7 @@ network::gather_dns_of() {
 # Scope: private
 # ----------------------------------------------------------------
 network::gather_static_ip() {
-  network_facts[ip]=$(ip -br -f inet addr | grep 192 | awk -F'[ /]+' '{print $3}')
-}
-
-# ----------------------------------------------------------------
-# Check if any of the facts is absent
-# Scope: private
-# ----------------------------------------------------------------
-network::facts_absent() {
-  [[ -z ${network_facts[uuid]} ]] || \
-  [[ -z ${network_facts[dns]}  ]] || \
-  [[ -z ${network_facts[ip]}   ]]
+  network_facts[ip]=$(ip -brief -family inet addr | grep 192 | awk -F'[ /]+' '{print $3}')
 }
 
 # ----------------------------------------------------------------
@@ -186,18 +174,23 @@ network::facts_absent() {
 # 3. dns list  -> exported to network_facts[dns]
 # ----------------------------------------------------------------
 network::gather_facts() {
-  if network::facts_absent; then
-    [[ -n ${network_facts[uuid]} ]] || network::gather_uuid_with_auto_method
-    [[ -n ${network_facts[dns]}  ]] || network::gather_dns_of ${network_facts[uuid]}
-    [[ -n ${network_facts[ip]}   ]] || network::gather_static_ip
-
-    if log::is_verbose_enabled; then
-      log::verbose "network_facts:"
-      for key in ${!network_facts[@]}; do
-        log::verbose "$key -> ${network_facts[$key]}"
-      done | column -t
-    fi
+  log::verbose "Gathering facts for networks..."
+  if [[ $1 = '--of-all' ]]; then
+    network::gather_uuid_with_auto_method
   fi
+  network::gather_dns
+  network::gather_static_ip
+
+  if log::is_verbose; then
+    log::verbose "network_facts:"
+    for key in ${!network_facts[@]}; do
+      log::verbose "$key -> ${network_facts[$key]}"
+    done | column -t
+  fi
+}
+
+network::dns_available() {
+  [[ $(grep nameserver /etc/resolv.conf | wc -l) -ge 2 ]]
 }
 
 # ----------------------------------------------------------------
@@ -205,20 +198,22 @@ network::gather_facts() {
 # Scope: private
 # ----------------------------------------------------------------
 network::resolve_dns() {
-  network::gather_facts
-  
-  [[ -n ${network_facts[dns]} && -n ${network_facts[uuid]} ]] || {
-    log::info "Resolving dns..."
-    for nameserver in ${namespaces[@]}; do
-      log::verbose "Adding nameserver $nameserver..."
-      nmcli con mod ${network_facts[uuid]} +ipv4.dns $nameserver
-    done
+  if network::dns_available; then
+    return
+  fi
 
-    log::verbose "Restarting network manager..."
-    nmcli con reload
-    systemctl restart NetworkManager
-    sleep 2
-  }
+  network::gather_facts --of-all
+  
+  log::info "Resolving dns..."
+  for nameserver in ${namespaces[@]}; do
+    log::verbose "Adding nameserver $nameserver..."
+    nmcli con mod ${network_facts[uuid]} +ipv4.dns $nameserver
+  done
+
+  log::verbose "Restarting network manager..."
+  nmcli con reload
+  systemctl restart NetworkManager
+  sleep 1
 }
 
 # ----------------------------------------------------------------
@@ -394,7 +389,7 @@ setup::main() {
 #   $@ -> package names
 # ----------------------------------------------------------------
 pkgmgr::install() {
-  test::cmd $@ || {
+  cmd_exists $@ || {
     log::info "Installing $@..."
     $PKGMGR install -y $QUIET_FLAG_Q $@ >$QUIET_STDOUT 2>&1
   }
