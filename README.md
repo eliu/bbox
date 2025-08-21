@@ -2,13 +2,15 @@
 
 本项目通过 Vagrant 快速启动一个适用于国内网络环境的干净的 Linux 开发环境。以下 Vagrant Box 镜像已通过验证：
 
-| 操作系统        | Vagrant Box 镜像     | 虚拟机名称 | IP            |
-| --------------- | -------------------- | ---------- | ------------- |
-| Rocky Linux 9.x | `bento/rockylinux-9` | rocky9     | 192.168.13.10 |
-| Rocky Linux 8.x | `bento/rockylinux-8` | rocky8     | 192.168.13.11 |
-| AlmaLinux 9.x   | `bento/almalinux-9`  | alma9      | 192.168.13.12 |
-| AlmaLinux 8.x   | `bento/almalinux-8`  | alma8      | 192.168.13.13 |
-| CentOS 7.x      | `bento/centos-7`     | centos     | 192.168.13.14 |
+| 操作系统             | Vagrant Box 镜像        | 虚拟机名称   | IP            | 默认镜像 |
+| ---------------- | --------------------- | ------- | ------------- | ---- |
+| Rocky Linux 8.x  | `bento/rockylinux-8`  | rocky8  | 192.168.13.10 |      |
+| Rocky Linux 9.x  | `bento/rockylinux-9`  | rocky9  | 192.168.13.11 | ✔︎   |
+| Rocky Linux 10.x | `bento/rockylinux-10` | rocky10 | 192.168.13.12 |      |
+| AlmaLinux 8.x    | `bento/almalinux-8`   | alma8   | 192.168.13.20 |      |
+| AlmaLinux 9.x    | `bento/almalinux-9`   | alma9   | 192.168.13.21 |      |
+| AlmaLinux 10.x   | `bento/almalinux-10`  | alma10  | 192.168.13.22 |      |
+| CentOS 7.x       | `bento/centos-7`      | centos  | 192.168.13.30 |      |
 
 相比于 [eliu/devbox: 快速开发环境 (github.com)](https://github.com/eliu/devbox)，bbox 没有过多的配置选项，没有额外的软件需要安装。
 
@@ -29,10 +31,10 @@ $ git clone https://github.com/eliu/bbox.git
 
 由于本项目设计初衷是尽可能简单，所以配置越少越好，目前仍可以配置两个选项，可通过 `export` 命令来覆盖，这些选项如下：
 
-| 选项            | 含义                               | 默认值 |
-| --------------- | ---------------------------------- | ------ |
-| VG_LOG_LEVEL    | 日志打印级别，info, verbose, debug | info   |
-| VG_SHOW_WRAP_UP | 在初始化完成后是否输出汇总信息     | true   |
+| 选项              | 含义                          | 默认值  |
+| --------------- | --------------------------- | ---- |
+| VG_LOG_LEVEL    | 日志打印级别，info, verbose, debug | info |
+| VG_SHOW_WRAP_UP | 在初始化完成后是否输出汇总信息             | true |
 
 如需覆盖，可以在 Vagrantfile 的 $script 区段进行设置，如下：
 
@@ -91,4 +93,3 @@ $ vagrant destroy -f
 ## License
 
 [Apache-2.0](LICENSE)
-
