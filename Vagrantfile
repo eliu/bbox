@@ -32,7 +32,7 @@ Vagrant.configure("2") do |config|
     s.vm.network "private_network", ip: "192.168.13.11"
   end
 
-  config.vm.define "rocky10", primary: true do |s|
+  config.vm.define "rocky10", autostart: false do |s|
     s.vm.box = "bento/rockylinux-10"
     s.vm.network "private_network", ip: "192.168.13.12"
   end
