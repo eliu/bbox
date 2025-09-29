@@ -1,4 +1,4 @@
-# B-Box (Base-Box) - 基础 Linux 开发环境
+# bbox (Base Box) - 基于 Vagrant 的 Linux 基础开发环境
 
 本项目通过 Vagrant 快速启动一个适用于国内网络环境的干净的 Linux 开发环境。以下 Vagrant Box 镜像已通过验证：
 
