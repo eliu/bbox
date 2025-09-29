@@ -11,7 +11,7 @@ readonly STYLE_CYAN="\e[36m"
 readonly STYLE_RESET="\e[39m"
 readonly LOG_LEVEL=${VG_LOG_LEVEL:-info}
 readonly SETUP_ENV_FILE="/etc/profile.d/$PROG.sh"
-readonly SETUP_SHOW_WRAP_UP=${VG_SHOW_WRAP_UP:-true}
+readonly SETUP_SHOW_VG_SHOW_STATS=${VG_SHOW_STATS:-true}
 
 # ----------------------------------------------------------------
 # Check if specified commands exists
@@ -337,6 +337,13 @@ setup::epel() {
   
   $PKGMGR list installed "epel*" > /dev/null 2>&1 || {
     log::info "Installing epel-release..."
+
+    if [[ $OS_ID == 'centos' ]]; then
+      $PKGMGR install $QUIET_FLAG_Q -y epel-release >$QUIET_STDOUT 2>&1
+      SETUP_NEED_CACHE=true
+      return
+    fi
+
     $PKGMGR install $QUIET_FLAG_Q -y \
       https://mirrors.aliyun.com/epel/epel-release-latest-${OS_VERSION_MAJOR}.noarch.rpm \
       >$QUIET_STDOUT 2>&1
@@ -356,16 +363,15 @@ setup::epel() {
 # Wrap up post-setup infomation
 # Scope: private
 # ----------------------------------------------------------------
-setup::wrap_up() {
+setup::installation_stats() {
   network::gather_facts
-  log::info "All set! Wrap it up..."
+  log::info "All set! Print installation stats..."
   cat << EOF | column -t -s "|"
-PROPERTY   |VALUE
-machine os |$(style::green $(cat /etc/system-release))
-machine ip |$(style::green ${network_facts[ip]})
-dns list   |$(style::green ${network_facts[dns]})
-epel       |$(style::green $(version::epel))
-timezone   |$(style::green $TZ)
+OS|$(style::green $(cat /etc/system-release))
+IP Address|$(style::green ${network_facts[ip]})
+DNS|$(style::green ${network_facts[dns]})
+EPEL|$(style::green $(version::epel))
+Timezone|$(style::green $TZ)
 EOF
 }
 
@@ -378,7 +384,7 @@ setup::main() {
   setup::repo
   setup::epel
   setup::make_cache
-  [[ $SETUP_SHOW_WRAP_UP = "true" ]] && setup::wrap_up || true
+  [[ $SETUP_SHOW_VG_SHOW_STATS = "true" ]] && setup::installation_stats || true
 }
 
 # ----------------------------------------------------------------

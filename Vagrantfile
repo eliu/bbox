@@ -4,7 +4,7 @@ $script = <<-SHELL
   #!/usr/bin/env bash
   set -e
   # export VG_LOG_LEVEL=verbose
-  # export VG_SHOW_WRAP_UP=false
+  # export VG_SHOW_STATS=false
   source /vagrant/bbox.sh
   setup::main
   welcome_msg="Congrats! bbox successfully inited!"
@@ -52,7 +52,7 @@ Vagrant.configure("2") do |config|
     s.vm.network "private_network", ip: "192.168.13.22"
   end  
 
-  config.vm.define "centos", autostart: false do |s|
+  config.vm.define "centos7", autostart: false do |s|
     s.vm.box = "bento/centos-7"
     s.vm.network "private_network", ip: "192.168.13.30"
   end

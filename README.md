@@ -34,7 +34,7 @@ $ git clone https://github.com/eliu/bbox.git
 | 选项              | 含义                          | 默认值  |
 | --------------- | --------------------------- | ---- |
 | VG_LOG_LEVEL    | 日志打印级别，info, verbose, debug | info |
-| VG_SHOW_WRAP_UP | 在初始化完成后是否输出汇总信息             | true |
+| VG_SHOW_STATS | 在初始化完成后是否输出汇总信息             | true |
 
 如需覆盖，可以在 Vagrantfile 的 $script 区段进行设置，如下：
 
