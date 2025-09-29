@@ -2,15 +2,15 @@
 
 本项目通过 Vagrant 快速启动一个适用于国内网络环境的干净的 Linux 开发环境。以下 Vagrant Box 镜像已通过验证：
 
-| 操作系统             | Vagrant Box 镜像        | 虚拟机名称   | IP            | 默认镜像 |
-| ---------------- | --------------------- | ------- | ------------- | ---- |
-| Rocky Linux 8.x  | `bento/rockylinux-8`  | rocky8  | 192.168.13.10 |      |
-| Rocky Linux 9.x  | `bento/rockylinux-9`  | rocky9  | 192.168.13.11 | ✔︎   |
-| Rocky Linux 10.x | `bento/rockylinux-10` | rocky10 | 192.168.13.12 |      |
-| AlmaLinux 8.x    | `bento/almalinux-8`   | alma8   | 192.168.13.20 |      |
-| AlmaLinux 9.x    | `bento/almalinux-9`   | alma9   | 192.168.13.21 |      |
-| AlmaLinux 10.x   | `bento/almalinux-10`  | alma10  | 192.168.13.22 |      |
-| CentOS 7.x       | `bento/centos-7`      | centos  | 192.168.13.30 |      |
+| 操作系统             | Vagrant Box 镜像        | 虚拟机名称   | IP            | 默认镜像 | 启动命令                                |
+| ---------------- | --------------------- | ------- | ------------- | ---- | ----------------------------------- |
+| Rocky Linux 8.x  | `bento/rockylinux-8`  | rocky8  | 192.168.13.10 |      | `vagrant up rocky8`                 |
+| Rocky Linux 9.x  | `bento/rockylinux-9`  | rocky9  | 192.168.13.11 | ✔︎   | `vagrant up` 或者 `vagrant up rocky9` |
+| Rocky Linux 10.x | `bento/rockylinux-10` | rocky10 | 192.168.13.12 |      | `vagrant up rocky10`                |
+| AlmaLinux 8.x    | `bento/almalinux-8`   | alma8   | 192.168.13.20 |      | `vagrant up alma8`                  |
+| AlmaLinux 9.x    | `bento/almalinux-9`   | alma9   | 192.168.13.21 |      | `vagrant up alma9`                  |
+| AlmaLinux 10.x   | `bento/almalinux-10`  | alma10  | 192.168.13.22 |      | `vagrant up alma10`                 |
+| CentOS 7.x       | `bento/centos-7`      | centos7 | 192.168.13.30 |      | `vagrant up centos7`                |
 
 相比于 [eliu/devbox: 快速开发环境 (github.com)](https://github.com/eliu/devbox)，bbox 没有过多的配置选项，没有额外的软件需要安装。
 
@@ -31,9 +31,9 @@ $ git clone https://github.com/eliu/bbox.git
 
 由于本项目设计初衷是尽可能简单，所以配置越少越好，目前仍可以配置两个选项，可通过 `export` 命令来覆盖，这些选项如下：
 
-| 选项              | 含义                          | 默认值  |
-| --------------- | --------------------------- | ---- |
-| VG_LOG_LEVEL    | 日志打印级别，info, verbose, debug | info |
+| 选项            | 含义                          | 默认值  |
+| ------------- | --------------------------- | ---- |
+| VG_LOG_LEVEL  | 日志打印级别，info, verbose, debug | info |
 | VG_SHOW_STATS | 在初始化完成后是否输出汇总信息             | true |
 
 如需覆盖，可以在 Vagrantfile 的 $script 区段进行设置，如下：
